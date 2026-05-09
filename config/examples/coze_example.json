@@ -1,0 +1,12 @@
+{
+    "name": "Coze 平台配置示例",
+    "description": "使用 Coze 平台的大模型服务（豆包、DeepSeek、Kimi 等）",
+    "config": {
+        "model_type": "coze",
+        "model": "doubao-seed-2-0-pro-260215",
+        "temperature": 0.7,
+        "top_p": 0.9,
+        "max_completion_tokens": 4000,
+        "thinking": "disabled"
+    }
+}

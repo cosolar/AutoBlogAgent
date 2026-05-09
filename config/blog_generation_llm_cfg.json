@@ -1,5 +1,6 @@
 {
     "config": {
+        "model_type": "coze",
         "model": "doubao-seed-2-0-pro-260215",
         "temperature": 0.75,
         "top_p": 0.9,

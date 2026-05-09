@@ -1,0 +1,12 @@
+{
+    "name": "OpenAI 配置示例",
+    "description": "使用 OpenAI 的 GPT 系列模型",
+    "config": {
+        "model_type": "openai",
+        "model": "gpt-4o",
+        "api_key": "${OPENAI_API_KEY}",
+        "base_url": "https://api.openai.com/v1",
+        "temperature": 0.7,
+        "max_tokens": 4000
+    }
+}

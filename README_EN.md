@@ -138,9 +138,22 @@ Generated blogs include complete article structure:
 ### Core Technologies
 
 - **Workflow Orchestration**: LangGraph
-- **Large Language Model**: Doubao Seed / DeepSeek / Kimi
+- **Large Language Model**: Multi-provider support (Coze SDK / OpenAI / DashScope / DeepSeek / Kimi)
 - **Article Search**: Web Search API
 - **Document Generation**: PDF Generation API
+- **Prompt Templates**: Jinja2
+
+### Supported LLM Providers
+
+This project uses a unified LLM client (`src/utils/llm_client.py`) with support for multiple LLM providers:
+
+| Provider | Type | Model Examples | Description |
+|----------|------|----------------|-------------|
+| **Coze SDK** | `coze` | doubao-seed-2-0-pro | Doubao models via Coze platform |
+| **OpenAI** | `openai` | gpt-4o, gpt-4-turbo | OpenAI official API |
+| **DashScope** | `dashscope` | qwen-plus, qwen-max | Alibaba Cloud Tongyi Qianwen |
+| **DeepSeek** | `deepseek` | deepseek-chat, deepseek-coder | DeepSeek models |
+| **Kimi** | `kimi` | moonshot-v1-8k, moonshot-v1-32k | Moonshot AI Kimi |
 
 ### Development Framework
 
@@ -165,10 +178,18 @@ Python >= 3.10
 │   │       ├── topic_selection_node.py
 │   │       ├── blog_generation_node.py
 │   │       └── document_generation_node.py
+│   ├── utils/                    # Utility modules
+│   │   └── llm_client.py        # Unified LLM client (multi-provider)
 │   └── main.py                   # Program entry
 ├── config/                       # Configuration files
 │   ├── hot_topic_analysis_llm_cfg.json
-│   └── blog_generation_llm_cfg.json
+│   ├── blog_generation_llm_cfg.json
+│   └── examples/                # Configuration examples
+│       ├── coze_example.json
+│       ├── openai_example.json
+│       ├── dashscope_example.json
+│       ├── deepseek_example.json
+│       └── kimi_example.json
 ├── tests/                        # Test cases
 ├── AGENTS.md                     # Project spec document
 └── README.md                     # Project documentation
@@ -269,30 +290,141 @@ Track interesting tech fields and generate learning notes and summaries.
 
 ## 🔧 Advanced Configuration
 
-### Custom LLM Configuration
+### Multi-Provider LLM Support
 
-Edit JSON config files in `config/` directory:
+This project uses a unified LLM client architecture. Specify the model type via the `type` field in the config file:
+
+#### 1. Coze SDK (Doubao Models)
+
+Access Doubao models via Coze platform (recommended for Chinese users):
 
 ```json
 {
+    "type": "coze",
     "config": {
         "model": "doubao-seed-2-0-pro-260215",
         "temperature": 0.7,
         "max_completion_tokens": 8000
     },
-    "sp": "Your system prompt...",
-    "up": "Your user prompt..."
+    "sp": "You are a professional technical blog writing assistant...",
+    "up": "Analyze the following articles and identify hot topics..."
 }
 ```
 
-### Supported Models
+**Best for**: Chinese users, production environments requiring stability
 
-| Model ID | Description |
-|----------|-------------|
-| `doubao-seed-2-0-pro-260215` | Flagship all-round model, suitable for complex tasks |
-| `doubao-seed-2-0-lite-260215` | Balanced model, high cost-effectiveness |
-| `deepseek-v3-2-251201` | DeepSeek V3.2 model |
-| `kimi-k2-5-260127` | Kimi K2.5 model |
+#### 2. OpenAI GPT Series
+
+Use OpenAI's official API:
+
+```json
+{
+    "type": "openai",
+    "config": {
+        "model": "gpt-4o",
+        "api_key": "your-openai-api-key",
+        "temperature": 0.7,
+        "max_tokens": 8000
+    },
+    "sp": "You are a professional technical blog writer...",
+    "up": "Analyze the following articles and identify hot topics..."
+}
+```
+
+**Best for**: International projects, teams with existing OpenAI API access
+
+#### 3. DashScope (Alibaba Cloud)
+
+Use Alibaba Cloud's DashScope platform:
+
+```json
+{
+    "type": "dashscope",
+    "config": {
+        "model": "qwen-plus",
+        "api_key": "your-dashscope-api-key",
+        "temperature": 0.7,
+        "max_tokens": 8000
+    },
+    "sp": "You are a professional technical blog writing assistant...",
+    "up": "Analyze the following articles and identify hot topics..."
+}
+```
+
+**Best for**: Alibaba Cloud users, domestic enterprises, data security requirements
+
+#### 4. DeepSeek
+
+Use DeepSeek models:
+
+```json
+{
+    "type": "deepseek",
+    "config": {
+        "model": "deepseek-chat",
+        "api_key": "your-deepseek-api-key",
+        "temperature": 0.7,
+        "max_tokens": 8000
+    },
+    "sp": "You are a professional technical blog writer...",
+    "up": "Analyze the following articles and identify hot topics..."
+}
+```
+
+**Best for**: Cost-effective solutions, strong code generation capabilities
+
+#### 5. Kimi (Moonshot AI)
+
+Use Moonshot AI's Kimi models:
+
+```json
+{
+    "type": "kimi",
+    "config": {
+        "model": "moonshot-v1-8k",
+        "api_key": "your-kimi-api-key",
+        "temperature": 0.7,
+        "max_tokens": 8000
+    },
+    "sp": "You are a professional technical blog writing assistant...",
+    "up": "Analyze the following articles and identify hot topics..."
+}
+```
+
+**Best for**: Long text processing, document analysis scenarios
+
+### Configuration Template
+
+Configuration files are located in the `config/` directory. Required fields:
+
+```json
+{
+    "type": "coze|openai|dashscope|deepseek|kimi",  // Model provider type
+    "config": {
+        "model": "model-id",        // Model ID
+        "temperature": 0.7,          // Temperature (0-1)
+        "max_tokens": 8000          // Max token count
+        // Additional parameters...
+    },
+    "sp": "System prompt",
+    "up": "User prompt (supports Jinja2 templates)"
+}
+```
+
+### Quick Model Switching
+
+Simply modify the `type` field in config files to switch models:
+
+```python
+# Use Coze SDK
+# config: "type": "coze", "model": "doubao-seed-2-0-pro-260215"
+
+# Switch to OpenAI
+# config: "type": "openai", "model": "gpt-4o"
+
+# Switch to DashScope
+# config: "type": "dashscope", "model": "qwen-plus"
+```
 
 ### Custom Search Platforms
 

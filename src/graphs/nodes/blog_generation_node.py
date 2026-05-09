@@ -1,15 +1,15 @@
 """
 博客生成节点 - 基于热点话题生成技术博客文章
+支持多种大模型：Coze SDK、OpenAI、阿里百炼、DeepSeek、Kimi 等
 """
 import os
 import json
+import logging
 from jinja2 import Template
 from langchain_core.runnables import RunnableConfig
 from langchain_core.messages import SystemMessage, HumanMessage
 from langgraph.runtime import Runtime
 from coze_coding_utils.runtime_ctx.context import Context
-from coze_coding_dev_sdk import LLMClient
-from coze_coding_utils.runtime_ctx.context import new_context
 
 from graphs.state import (
     BlogGenerationInput,
@@ -17,6 +17,9 @@ from graphs.state import (
     BlogContent,
     Article
 )
+from utils.llm_client import LLMClientFactory
+
+logger = logging.getLogger(__name__)
 
 
 def blog_generation_node(
@@ -27,16 +30,14 @@ def blog_generation_node(
     """
     title: 博客生成
     desc: 基于选定的热点话题和相关文章，自动生成结构完整、专业的技术博客文章
-    integrations: 大语言模型
+    integrations: 大语言模型（支持 Coze SDK、OpenAI、阿里百炼、DeepSeek、Kimi 等）
     """
-    ctx = new_context(method="blog_generation")
-
     # 读取LLM配置
     cfg_file = os.path.join(os.getenv("COZE_WORKSPACE_PATH"), config['metadata']['llm_cfg'])
     with open(cfg_file, 'r', encoding='utf-8') as fd:
         _cfg = json.load(fd)
 
-    llm_config = _cfg.get("config", {})
+    llm_config_data = _cfg.get("config", {})
     sp = _cfg.get("sp", "")
     up = _cfg.get("up", "")
 
@@ -85,19 +86,34 @@ def blog_generation_node(
         "references": references_content
     })
 
-    # 调用LLM生成博客
-    client = LLMClient(ctx=ctx)
-    messages = [
-        SystemMessage(content=sp),
-        HumanMessage(content=user_prompt)
-    ]
+    # 使用通用LLM客户端
+    try:
+        client = LLMClientFactory.from_config_file(cfg_file)
+    except Exception as e:
+        logger.error(f"初始化LLM客户端失败: {e}")
+        # 回退到 Coze SDK
+        from coze_coding_dev_sdk import LLMClient as CozeLLMClient
+        from coze_coding_utils.runtime_ctx.context import new_context
+        ctx = new_context(method="blog_generation")
+        client = CozeLLMClient(ctx=ctx)
 
-    response = client.invoke(
-        messages=messages,
-        model=llm_config.get("model", "doubao-seed-2-0-pro-260215"),
-        temperature=llm_config.get("temperature", 0.7),
-        max_completion_tokens=llm_config.get("max_completion_tokens", 8000)
-    )
+        messages = [
+            SystemMessage(content=sp),
+            HumanMessage(content=user_prompt)
+        ]
+
+        response = client.invoke(
+            messages=messages,
+            model=llm_config_data.get("model", "doubao-seed-2-0-pro-260215"),
+            temperature=llm_config_data.get("temperature", 0.7),
+            max_completion_tokens=llm_config_data.get("max_completion_tokens", 8000)
+        )
+    else:
+        messages = [
+            SystemMessage(content=sp),
+            HumanMessage(content=user_prompt)
+        ]
+        response = client.invoke(messages=messages)
 
     # 解析响应内容
     content = response.content

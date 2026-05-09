@@ -1,0 +1,12 @@
+{
+    "name": "DeepSeek 配置示例",
+    "description": "使用 DeepSeek 的大模型服务",
+    "config": {
+        "model_type": "deepseek",
+        "model": "deepseek-chat",
+        "api_key": "${DEEPSEEK_API_KEY}",
+        "base_url": "https://api.deepseek.com/v1",
+        "temperature": 0.7,
+        "max_tokens": 4000
+    }
+}

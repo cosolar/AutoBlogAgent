@@ -139,9 +139,24 @@ AI 分析：
 ### 核心技术
 
 - **工作流编排**: LangGraph
-- **大语言模型**: Doubao Seed / DeepSeek / Kimi
+- **大语言模型**: 支持多种模型（Coze SDK / OpenAI / 阿里百炼 / DeepSeek / Kimi 等）
 - **文章搜索**: Web Search API
 - **文档生成**: PDF Generation API
+- **提示词模板**: Jinja2
+
+### 支持的 LLM 提供商
+
+本项目使用统一的 LLM 客户端 (`src/utils/llm_client.py`)，支持多种大语言模型提供商：
+
+| 提供商 | 类型 | 模型示例 | 说明 |
+|--------|------|---------|------|
+| **Coze SDK** | `coze` | doubao-seed-2-0-pro | 通过 Coze 平台调用豆包模型 |
+| **OpenAI** | `openai` | gpt-4o, gpt-4-turbo | OpenAI 官方 API |
+| **阿里百炼** | `dashscope` | qwen-plus, qwen-max | 阿里云通义千问系列 |
+| **DeepSeek** | `deepseek` | deepseek-chat, deepseek-coder | DeepSeek 模型 |
+| **Kimi** | `kimi` | moonshot-v1-8k, moonshot-v1-32k | 月之暗面 Kimi 模型 |
+
+> 💡 **提示**: 所有支持的模型列表可参考 [LLM Skill 文档](/skills/public/prod/llm)
 
 ### 开发框架
 
@@ -166,10 +181,18 @@ Python >= 3.10
 │   │       ├── topic_selection_node.py
 │   │       ├── blog_generation_node.py
 │   │       └── document_generation_node.py
+│   ├── utils/                    # 工具模块
+│   │   └── llm_client.py        # 通用 LLM 客户端（支持多模型）
 │   └── main.py                   # 程序入口
 ├── config/                       # 配置文件
 │   ├── hot_topic_analysis_llm_cfg.json
-│   └── blog_generation_llm_cfg.json
+│   ├── blog_generation_llm_cfg.json
+│   └── examples/                # 配置示例
+│       ├── coze_example.json
+│       ├── openai_example.json
+│       ├── dashscope_example.json
+│       ├── deepseek_example.json
+│       └── kimi_example.json
 ├── tests/                        # 测试用例
 ├── AGENTS.md                     # 项目规范文档
 └── README.md                     # 项目说明文档
@@ -270,30 +293,141 @@ print("文档下载链接:", result["document_url"])
 
 ## 🔧 高级配置
 
-### 自定义 LLM 配置
+### 多模型支持说明
 
-编辑 `config/` 目录下的 JSON 配置文件：
+本项目采用统一的 LLM 客户端架构，通过配置文件中的 `type` 字段指定模型类型，支持以下模型提供商：
+
+#### 1. Coze SDK (豆包模型)
+
+通过 Coze 平台调用豆包系列模型，适合国内用户：
 
 ```json
 {
+    "type": "coze",
     "config": {
         "model": "doubao-seed-2-0-pro-260215",
         "temperature": 0.7,
         "max_completion_tokens": 8000
     },
-    "sp": "你的系统提示词...",
-    "up": "你的用户提示词..."
+    "sp": "你是一个专业的技术博客写作助手...",
+    "up": "根据以下文章内容分析技术热点..."
 }
 ```
 
-### 支持的模型
+**适用场景**: 国内用户、需要稳定服务的生产环境
 
-| 模型 ID | 说明 |
-|---------|------|
-| `doubao-seed-2-0-pro-260215` | 旗舰级全能模型，适合复杂任务 |
-| `doubao-seed-2-0-lite-260215` | 均衡型模型，性价比高 |
-| `deepseek-v3-2-251201` | DeepSeek V3.2 模型 |
-| `kimi-k2-5-260127` | Kimi K2.5 模型 |
+#### 2. OpenAI GPT 系列
+
+使用 OpenAI 官方 API：
+
+```json
+{
+    "type": "openai",
+    "config": {
+        "model": "gpt-4o",
+        "api_key": "your-openai-api-key",
+        "temperature": 0.7,
+        "max_tokens": 8000
+    },
+    "sp": "You are a professional technical blog writer...",
+    "up": "Analyze the following articles and identify hot topics..."
+}
+```
+
+**适用场景**: 国际化项目、已有 OpenAI API 的团队
+
+#### 3. 阿里百炼 (通义千问)
+
+使用阿里云百炼平台：
+
+```json
+{
+    "type": "dashscope",
+    "config": {
+        "model": "qwen-plus",
+        "api_key": "your-dashscope-api-key",
+        "temperature": 0.7,
+        "max_tokens": 8000
+    },
+    "sp": "你是一个专业的技术博客写作助手...",
+    "up": "根据以下文章内容分析技术热点..."
+}
+```
+
+**适用场景**: 阿里云用户、国内企业、对数据安全有要求的场景
+
+#### 4. DeepSeek
+
+使用 DeepSeek 模型：
+
+```json
+{
+    "type": "deepseek",
+    "config": {
+        "model": "deepseek-chat",
+        "api_key": "your-deepseek-api-key",
+        "temperature": 0.7,
+        "max_tokens": 8000
+    },
+    "sp": "You are a professional technical blog writer...",
+    "up": "Analyze the following articles and identify hot topics..."
+}
+```
+
+**适用场景**: 追求性价比、需要代码能力强的模型
+
+#### 5. Kimi (月之暗面)
+
+使用月之暗面 Kimi 模型：
+
+```json
+{
+    "type": "kimi",
+    "config": {
+        "model": "moonshot-v1-8k",
+        "api_key": "your-kimi-api-key",
+        "temperature": 0.7,
+        "max_tokens": 8000
+    },
+    "sp": "你是一个专业的技术博客写作助手...",
+    "up": "根据以下文章内容分析技术热点..."
+}
+```
+
+**适用场景**: 长文本处理、长文档分析场景
+
+### 配置文件模板
+
+配置文件位于 `config/` 目录，必须包含以下字段：
+
+```json
+{
+    "type": "coze|openai|dashscope|deepseek|kimi",  // 模型类型
+    "config": {
+        "model": "model-id",        // 模型 ID
+        "temperature": 0.7,         // 温度参数 (0-1)
+        "max_tokens": 8000          // 最大 token 数
+        // 其他参数...
+    },
+    "sp": "系统提示词",
+    "up": "用户提示词 (支持 Jinja2 模板)"
+}
+```
+
+### 快速切换模型
+
+只需修改 `config/*.json` 中的配置，即可切换不同的模型：
+
+```python
+# 使用 Coze SDK
+# config: "type": "coze", "model": "doubao-seed-2-0-pro-260215"
+
+# 切换到 OpenAI
+# config: "type": "openai", "model": "gpt-4o"
+
+# 切换到阿里百炼
+# config: "type": "dashscope", "model": "qwen-plus"
+```
 
 ### 自定义搜索平台
 
