@@ -1,4 +1,4 @@
-# 🚀 Tech Blog Generator - Intelligent Tech Blog Generator
+# 🚀 AutoBlogAgent - AI-Powered Technical Blog Generator
 
 > Automatically track trending articles from GitHub, Juejin, CSDN, CNBlogs and other tech platforms, intelligently identify hot topics, and generate professional technical blog documents
 

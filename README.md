@@ -1,4 +1,4 @@
-# 🚀 Tech Blog Generator - 智能技术博客生成器
+# 🚀 AutoBlogAgent 技术博文自动生成智能体
 
 > 自动追踪 GitHub、掘金、CSDN、博客园等技术平台的热点文章，智能识别热点话题，生成专业完整的技术博客文档
 
