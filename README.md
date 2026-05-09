@@ -220,6 +220,22 @@ pip install -r requirements.txt
 ### 基本使用
 
 ```python
+# 一键推送到 GitHub
+chmod +x scripts/push_to_github.sh
+./scripts/push_to_github.sh <你的GitHub_Token> <仓库名称> [仓库描述]
+
+# 示例
+./scripts/push_to_github.sh ghp_xxxxxxxxxxxxxxx tech-blog-generator "技术热点追踪与博客生成"
+
+# 获取 GitHub Token:
+# 1. 登录 GitHub → Settings → Developer settings
+# 2. Personal access tokens → Generate new token
+# 3. 勾选 repo 权限 → 生成并复制
+```
+
+### 运行工作流
+
+```python
 from src.graphs.graph import main_graph
 
 # 定义工作流输入

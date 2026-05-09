@@ -217,6 +217,22 @@ pip install -r requirements.txt
 ### Basic Usage
 
 ```python
+# Push to GitHub with one command
+chmod +x scripts/push_to_github.sh
+./scripts/push_to_github.sh <Your_GitHub_Token> <Repo_Name> [Description]
+
+# Example
+./scripts/push_to_github.sh ghp_xxxxxxxxxxxxxxx tech-blog-generator "Tech Blog Generator"
+
+# Get GitHub Token:
+# 1. GitHub → Settings → Developer settings
+# 2. Personal access tokens → Generate new token
+# 3. Select repo scope → Generate and copy
+```
+
+### Run the Workflow
+
+```python
 from src.graphs.graph import main_graph
 
 # Define workflow input
