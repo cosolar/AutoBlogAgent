@@ -39,37 +39,33 @@ class DailyTopic(BaseModel):
 
 
 class GlobalState(BaseModel):
-    """全局状态定义"""
-    # 用户输入
-    platforms: List[str] = Field(
-        default=["github", "juejin", "csdn", "cnblogs"],
-        description="要抓取的技术平台列表"
-    )
-    keywords: List[str] = Field(
-        default=["开源", "AI", "编程", "技术趋势"],
-        description="搜索关键词"
-    )
-    article_count_per_platform: int = Field(
-        default=10,
-        description="每个平台抓取的文章数量"
-    )
-    
+    """全局状态定义 - 简化版"""
     # RSS 订阅
-    rss_url: str = Field(
-        default="http://infinitum.shawnxie.top/api/daily/rss",
-        description="RSS 订阅链接"
+    rss_urls: Optional[List[str]] = Field(
+        default=None,
+        description="RSS 订阅链接列表"
     )
     rss_topics: List[str] = Field(
         default=[],
         description="从 RSS 订阅提取的热门话题"
     )
+    daily_topics: List[DailyTopic] = Field(
+        default=[],
+        description="每日话题详情"
+    )
 
-    # 中间状态
-    generated_topics: List[str] = Field(default=[], description="大模型生成的搜索话题")
+    # 文章抓取
+    article_count: int = Field(default=20, description="总共抓取的文章数量")
     raw_articles: List[Article] = Field(default=[], description="抓取的原始文章列表")
+
+    # 热点分析
     hot_topics: List[HotTopic] = Field(default=[], description="识别的热点话题列表")
+
+    # 话题选择
     selected_topic: Optional[HotTopic] = Field(default=None, description="选中的热点话题")
     selected_related_articles: List[Article] = Field(default=[], description="选中话题相关的文章")
+
+    # 博客生成
     blog_content: Optional[BlogContent] = Field(default=None, description="生成的博客内容")
 
     # 最终输出
@@ -78,22 +74,14 @@ class GlobalState(BaseModel):
 
 
 class GraphInput(BaseModel):
-    """工作流输入"""
-    platforms: List[str] = Field(
-        default=["github", "juejin", "csdn", "cnblogs"],
-        description="要抓取的技术平台列表"
-    )
-    keywords: List[str] = Field(
-        default=["开源", "AI", "编程", "技术趋势"],
-        description="搜索关键词"
-    )
-    article_count_per_platform: int = Field(
-        default=10,
-        description="每个平台抓取的文章数量"
-    )
+    """工作流输入 - 简化为只需 RSS 订阅源"""
     rss_urls: Optional[List[str]] = Field(
         default=None,
         description="RSS 订阅链接列表（可选，默认使用 Infinitum AI日报和 AI Hot）"
+    )
+    article_count: int = Field(
+        default=20,
+        description="总共抓取的文章数量"
     )
 
 
@@ -109,11 +97,9 @@ class GraphOutput(BaseModel):
 # ==================== 节点输入输出定义 ====================
 
 class ArticleFetchInput(BaseModel):
-    """文章抓取节点输入"""
-    platforms: List[str] = Field(..., description="要抓取的技术平台列表")
-    keywords: List[str] = Field(..., description="搜索关键词")
-    article_count: int = Field(default=10, description="每个平台抓取数量")
+    """文章抓取节点输入 - 基于话题搜索"""
     rss_topics: List[str] = Field(default=[], description="从RSS订阅提取的热门话题")
+    article_count: int = Field(default=20, description="总共抓取数量")
 
 
 class ArticleFetchOutput(BaseModel):

@@ -1,24 +1,87 @@
 """
-文章抓取节点 - 调用大模型生成话题 + 并行搜索多平台热门文章
+文章抓取节点
+使用话题直接搜索并抓取相关文章
 """
 import os
 import json
-import re
-from typing import List, Tuple
+import logging
+from typing import List, Dict
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from jinja2 import Template
+
 from langchain_core.runnables import RunnableConfig
 from langgraph.runtime import Runtime
 from coze_coding_utils.runtime_ctx.context import Context
-from coze_coding_dev_sdk import SearchClient
-from coze_coding_utils.runtime_ctx.context import new_context
-
-from utils.llm_client import LLMClientFactory
 
 from graphs.state import (
     ArticleFetchInput,
     ArticleFetchOutput,
-    Article
+    Article,
+    GlobalState
 )
+
+logger = logging.getLogger(__name__)
+
+
+def _search_articles(topic: str, count: int, config: RunnableConfig, ctx: Context) -> List[Article]:
+    """使用话题搜索相关文章"""
+    articles = []
+    
+    try:
+        from coze_coding_dev_sdk import SearchClient
+        
+        # 使用 SearchClient 进行搜索
+        client = SearchClient(ctx=ctx)
+        
+        # 构造搜索查询 - 使用话题作为关键词
+        query = f"{topic} 技术 教程"
+        
+        # 调用搜索
+        response = client.web_search(query=query, count=count)
+        
+        if response and hasattr(response, 'web_items') and response.web_items:
+            for item in response.web_items:
+                url = item.url if hasattr(item, 'url') else ""
+                article = Article(
+                    title=item.title if hasattr(item, 'title') else "",
+                    url=url,
+                    source=_extract_source(url),
+                    snippet=item.content if hasattr(item, 'content') else "",
+                    publish_time=getattr(item, 'publish_time', None),
+                    author=getattr(item, 'author', None)
+                )
+                if article.title and article.url:
+                    articles.append(article)
+        
+        logger.info(f"话题 '{topic}' 搜索到 {len(articles)} 篇文章")
+        
+    except Exception as e:
+        logger.warning(f"搜索话题 '{topic}' 失败: {str(e)}")
+    
+    return articles
+
+
+def _extract_source(url: str) -> str:
+    """从URL提取来源平台"""
+    if not url:
+        return "unknown"
+    
+    if "github.com" in url:
+        return "github"
+    elif "juejin.cn" in url:
+        return "掘金"
+    elif "csdn.net" in url:
+        return "CSDN"
+    elif "cnblogs.com" in url:
+        return "博客园"
+    elif "zhihu.com" in url:
+        return "知乎"
+    elif "bilibili.com" in url:
+        return "B站"
+    elif "baidu.com" in url:
+        return "百度"
+    else:
+        return "other"
 
 
 def article_fetch_node(
@@ -28,188 +91,66 @@ def article_fetch_node(
 ) -> ArticleFetchOutput:
     """
     title: 文章抓取
-    desc: 合并RSS话题和大模型生成话题，并行从多平台抓取热门文章数据
-    integrations: 大语言模型, Web搜索
+    desc: 基于热门话题搜索并抓取相关文章，使用百度搜索
+    integrations: Web搜索
     """
-    ctx = new_context(method="article_fetch")
-
-    # ========== 步骤1: 获取话题来源 ==========
-    # 优先使用 RSS 订阅的话题
-    rss_topics = state.rss_topics if hasattr(state, 'rss_topics') else []
+    ctx = runtime.context
     
-    if rss_topics:
-        # 如果有 RSS 话题，直接使用
-        generated_topics = rss_topics
-        topic_source = "RSS订阅"
-    else:
-        # 否则调用大模型生成话题
-        generated_topics = _generate_topics(state.keywords, config, ctx)
-        topic_source = "大模型生成"
-
-    # ========== 步骤2: 并行搜索所有话题 ==========
-    articles = _parallel_search(
-        topics=generated_topics,
-        platforms=state.platforms,
-        article_count=state.article_count,
-        ctx=ctx
-    )
-
-    # ========== 步骤3: 汇总结果 ==========
-    summary = f"话题来源: {topic_source}，共 {len(generated_topics)} 个话题，从 {len(set(a.source for a in articles))} 个平台抓取到 {len(articles)} 篇相关文章"
-
-    return ArticleFetchOutput(
-        generated_topics=generated_topics,
-        raw_articles=articles,
-        fetch_summary=summary
-    )
-
-
-def _generate_topics(keywords: List[str], config: RunnableConfig, ctx: Context) -> List[str]:
-    """
-    调用大模型生成热门AI话题
-    """
-    # 获取LLM配置
-    cfg_file = os.path.join(os.getenv("COZE_WORKSPACE_PATH", ""), config['metadata'].get('topic_llm_cfg', 'config/topic_generation_llm_cfg.json'))
-
-    # 读取配置文件获取提示词
-    with open(cfg_file, 'r', encoding='utf-8') as f:
-        cfg = json.load(f)
-
-    # 创建LLM客户端
-    llm = LLMClientFactory.from_config_file(cfg_file)
-
-    # 渲染提示词
-    keywords_str = "、".join(keywords) if keywords else "AI技术"
-    user_prompt = cfg.get('up', '').replace('{{ keywords }}', keywords_str)
-
-    # 构建消息列表
-    from langchain_core.messages import SystemMessage, HumanMessage
-    sp = cfg.get('sp', '你是一个专业的AI技术话题分析师。')
-    messages = [
-        SystemMessage(content=sp),
-        HumanMessage(content=user_prompt)
-    ]
-
-    # 调用大模型
-    response = llm.invoke(messages=messages)
-
-    # 解析响应内容
-    content = response.content
-    if isinstance(content, str):
-        response_text = content.strip()
-    elif isinstance(content, list):
-        response_text = " ".join(str(item) for item in content)
-    else:
-        response_text = str(content)
-
-    # 解析话题列表
-    topics = []
-    for line in response_text.split('\n'):
-        line = line.strip()
-        if not line:
-            continue
-        # 解析格式: 话题名称|描述 或 直接是话题名称
-        if '|' in line:
-            topic_name = line.split('|')[0].strip()
-        else:
-            topic_name = line.strip().lstrip('0123456789.-、）) ')
-
-        if topic_name and len(topic_name) <= 50:
-            topics.append(topic_name)
-
-    # 确保至少有默认话题
+    # 获取话题列表 - 优先使用 RSS 话题
+    topics = state.rss_topics if state.rss_topics else []
+    
+    # 如果没有话题，返回空
     if not topics:
-        topics = [
-            "AI编程工具 Cursor 使用指南",
-            "大模型应用开发 LangChain实战",
-            "开源AI项目 GitHub热门推荐",
-            "机器学习框架 PyTorch vs TensorFlow",
-            "AI技术趋势 2024最火方向"
-        ]
-
-    return topics[:12]  # 最多12个话题
-
-
-def _parallel_search(
-    topics: List[str],
-    platforms: List[str],
-    article_count: int,
-    ctx: Context
-) -> List[Article]:
-    """
-    并行搜索所有话题和平台
-    """
-    # 平台域名映射
-    platform_domains = {
-        "github": "github.com",
-        "juejin": "juejin.cn",
-        "csdn": "csdn.net",
-        "cnblogs": "cnblogs.com"
-    }
-
-    # 获取需要搜索的平台
-    search_platforms = {
-        p: domain for p, domain in platform_domains.items()
-        if p in platforms
-    }
-
-    if not search_platforms:
-        # 如果没有指定平台，使用所有平台
-        search_platforms = platform_domains
-
-    # 构建搜索任务列表
-    search_tasks: List[Tuple[str, str, str]] = []  # (话题, 平台名, 域名)
-    for topic in topics:
-        for platform_name, domain in search_platforms.items():
-            search_tasks.append((topic, platform_name, domain))
-
-    # 并行执行搜索
+        logger.warning("没有可用的话题，返回空文章列表")
+        return ArticleFetchOutput(
+            generated_topics=[],
+            raw_articles=[],
+            fetch_summary="没有可用的话题"
+        )
+    
     all_articles: List[Article] = []
-
-    def search_single(task: Tuple[str, str, str]) -> List[Article]:
-        topic, platform_name, domain = task
-        articles = []
-        try:
-            search_client = SearchClient(ctx=ctx)
-            response = search_client.search(
-                query=topic,
-                search_type="web",
-                count=article_count,
-                sites=domain,
-                need_summary=True,
-                time_range="1m"  # 最近一个月
-            )
-
-            for item in response.web_items:
-                article = Article(
-                    title=item.title or "",
-                    url=item.url or "",
-                    source=platform_name,
-                    snippet=item.snippet or item.summary or "",
-                    publish_time=item.publish_time,
-                    author=None
-                )
-                articles.append(article)
-        except Exception as e:
-            pass
-        return articles
-
-    # 使用线程池并行搜索
-    with ThreadPoolExecutor(max_workers=10) as executor:
-        futures = [executor.submit(search_single, task) for task in search_tasks]
-        for future in as_completed(futures):
+    articles_per_topic = max(1, state.article_count // len(topics)) if topics else 1
+    
+    logger.info(f"开始基于 {len(topics)} 个话题搜索文章，每个话题 {articles_per_topic} 篇")
+    
+    # 并行搜索每个话题
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        future_to_topic = {
+            executor.submit(_search_articles, topic, articles_per_topic, config, ctx): topic
+            for topic in topics
+        }
+        
+        for future in as_completed(future_to_topic):
+            topic = future_to_topic[future]
             try:
                 articles = future.result()
                 all_articles.extend(articles)
-            except Exception:
-                continue
-
-    # 去重（基于URL）
-    unique_articles = []
+                logger.info(f"话题 '{topic}' 完成，获取 {len(articles)} 篇文章")
+            except Exception as e:
+                logger.error(f"处理话题 '{topic}' 时出错: {str(e)}")
+    
+    # 去重
     seen_urls = set()
+    unique_articles = []
     for article in all_articles:
         if article.url and article.url not in seen_urls:
             seen_urls.add(article.url)
             unique_articles.append(article)
-
-    return unique_articles
+    
+    logger.info(f"去重后共获取 {len(unique_articles)} 篇独特文章")
+    
+    # 构建摘要
+    sources_count = {}
+    for article in unique_articles:
+        sources_count[article.source] = sources_count.get(article.source, 0) + 1
+    
+    summary_parts = [f"共抓取 {len(unique_articles)} 篇文章"]
+    if sources_count:
+        source_info = ", ".join([f"{k}:{v}篇" for k, v in sorted(sources_count.items(), key=lambda x: -x[1])])
+        summary_parts.append(f"来源分布: {source_info}")
+    
+    return ArticleFetchOutput(
+        generated_topics=topics,
+        raw_articles=unique_articles,
+        fetch_summary="; ".join(summary_parts)
+    )
