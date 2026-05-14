@@ -91,9 +91,9 @@ class GraphInput(BaseModel):
         default=10,
         description="每个平台抓取的文章数量"
     )
-    rss_url: str = Field(
-        default="http://infinitum.shawnxie.top/api/daily/rss",
-        description="RSS 订阅链接（可选）"
+    rss_urls: Optional[List[str]] = Field(
+        default=None,
+        description="RSS 订阅链接列表（可选，默认使用 Infinitum AI日报和 AI Hot）"
     )
 
 
@@ -169,9 +169,9 @@ class DocumentGenerationOutput(BaseModel):
 
 class RssSubscriptionInput(BaseModel):
     """RSS 订阅节点输入"""
-    rss_url: str = Field(
-        default="http://infinitum.shawnxie.top/api/daily/rss",
-        description="RSS 订阅链接"
+    rss_urls: Optional[List[str]] = Field(
+        default=None,
+        description="RSS 订阅链接列表（可选，默认使用 Infinitum AI日报和 AI Hot）"
     )
     max_topics: int = Field(
         default=10,

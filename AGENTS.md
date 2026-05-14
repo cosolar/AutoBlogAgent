@@ -22,7 +22,11 @@
 
 ## 技能使用
 - 节点`rss_subscription`：
-  - 使用**fetch-url**技能从Infinitum AI日报RSS订阅源获取热门话题
+  - 使用**fetch-url**技能从多个RSS订阅源并行获取热门话题
+  - 默认订阅源：
+    - Infinitum AI 日报 (http://infinitum.shawnxie.top/api/daily/rss)
+    - AI Hot (https://aihot.virxact.com/feed/all.xml)
+  - 支持自定义RSS订阅源列表
 - 节点`article_fetch`：
   - 优先使用RSS话题，如果RSS获取失败则使用**大语言模型**技能生成AI技术话题
   - 使用**Web搜索**技能从GitHub、掘金、CSDN、博客园等平台抓取文章（并行搜索）

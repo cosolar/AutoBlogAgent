@@ -46,6 +46,7 @@
 
 | Node Name | Type | Description |
 |-----------|------|-------------|
+| `rss_subscription` | Task | Fetch trending topics from multiple RSS feeds |
 | `article_fetch` | Task | Fetch trending articles from specified tech platforms |
 | `hot_topic_analysis` | Agent | Analyze articles using LLM to identify hot topics |
 | `topic_selection` | Task | Select the hottest topic from multiple options |
@@ -55,6 +56,21 @@
 ---
 
 ## 🎯 Features
+
+### 0. RSS Subscription Topic Discovery
+
+Automatically fetch trending topics from multiple RSS feeds:
+
+| Feed | URL | Description |
+|------|-----|-------------|
+| Infinitum AI Daily | `http://infinitum.shawnxie.top/api/daily/rss` | AI tech daily highlights |
+| AI Hot | `https://aihot.virxact.com/feed/all.xml` | AI hot news |
+
+**Features:**
+- Parallel fetching from multiple RSS sources for efficiency
+- Smart keyword extraction from titles and descriptions
+- Automatic deduplication and popularity ranking
+- Support for custom RSS feed lists
 
 ### 1. Multi-Platform Article Fetching
 

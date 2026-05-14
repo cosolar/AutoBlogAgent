@@ -47,6 +47,7 @@
 
 | 节点名称 | 类型 | 功能描述 |
 |---------|------|---------|
+| `rss_subscription` | Task | 从多个 RSS 订阅源获取热门话题 |
 | `article_fetch` | Task | 从指定技术平台抓取热门文章数据 |
 | `hot_topic_analysis` | Agent | 使用 LLM 分析文章，识别热点话题 |
 | `topic_selection` | Task | 从多个热点中选择最热门的话题 |
@@ -56,6 +57,21 @@
 ---
 
 ## 🎯 功能详解
+
+### 0. RSS 订阅话题获取
+
+支持从多个 RSS 订阅源自动获取热门话题：
+
+| 订阅源 | URL | 说明 |
+|-------|-----|------|
+| Infinitum AI 日报 | `http://infinitum.shawnxie.top/api/daily/rss` | AI 技术每日热点 |
+| AI Hot | `https://aihot.virxact.com/feed/all.xml` | AI 热点资讯 |
+
+**特性：**
+- 并行获取多个 RSS 源，提升效率
+- 智能提取标题和描述中的关键词
+- 自动去重和热度排序
+- 支持自定义 RSS 订阅源列表
 
 ### 1. 多平台文章抓取
 
