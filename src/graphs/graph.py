@@ -19,10 +19,13 @@ from graphs.state import (
     BlogGenerationOutput,
     DocumentGenerationInput,
     DocumentGenerationOutput,
-    Article
+    Article,
+    RssSubscriptionInput,
+    RssSubscriptionOutput,
 )
 
 # 导入节点函数
+from graphs.nodes.rss_subscription_node import rss_subscription_node
 from graphs.nodes.article_fetch_node import article_fetch_node
 from graphs.nodes.hot_topic_analysis_node import hot_topic_analysis_node
 from graphs.nodes.topic_selection_node import topic_selection_node
@@ -41,6 +44,16 @@ builder = StateGraph(
 def build_graph():
     """构建工作流图"""
     # 添加节点
+    # RSS 订阅节点 - 从 Infinitum AI 日报获取热门话题
+    builder.add_node(
+        "rss_subscription",
+        rss_subscription_node,
+        metadata={
+            "type": "task",
+            "skill": "fetch-url"
+        }
+    )
+    
     # 文章抓取节点 - 调用大模型生成话题 + 并行Web搜索
     builder.add_node(
         "article_fetch",
@@ -81,9 +94,10 @@ def build_graph():
     )
 
     # 设置入口点
-    builder.set_entry_point("article_fetch")
+    builder.set_entry_point("rss_subscription")
 
     # 添加边 - 线性流程
+    builder.add_edge("rss_subscription", "article_fetch")
     builder.add_edge("article_fetch", "hot_topic_analysis")
     builder.add_edge("hot_topic_analysis", "topic_selection")
     builder.add_edge("topic_selection", "blog_generation")

@@ -31,6 +31,13 @@ class BlogContent(BaseModel):
     references: List[str] = Field(default=[], description="参考文章链接")
 
 
+class DailyTopic(BaseModel):
+    """每日话题结构"""
+    date: str = Field(..., description="日期")
+    keywords: List[str] = Field(default=[], description="当日关键词")
+    summary: str = Field(default="", description="当日摘要")
+
+
 class GlobalState(BaseModel):
     """全局状态定义"""
     # 用户输入
@@ -45,6 +52,16 @@ class GlobalState(BaseModel):
     article_count_per_platform: int = Field(
         default=10,
         description="每个平台抓取的文章数量"
+    )
+    
+    # RSS 订阅
+    rss_url: str = Field(
+        default="http://infinitum.shawnxie.top/api/daily/rss",
+        description="RSS 订阅链接"
+    )
+    rss_topics: List[str] = Field(
+        default=[],
+        description="从 RSS 订阅提取的热门话题"
     )
 
     # 中间状态
@@ -74,6 +91,10 @@ class GraphInput(BaseModel):
         default=10,
         description="每个平台抓取的文章数量"
     )
+    rss_url: str = Field(
+        default="http://infinitum.shawnxie.top/api/daily/rss",
+        description="RSS 订阅链接（可选）"
+    )
 
 
 class GraphOutput(BaseModel):
@@ -81,6 +102,8 @@ class GraphOutput(BaseModel):
     hot_topics: List[HotTopic] = Field(default=[], description="识别的热点话题列表")
     blog_content: Optional[BlogContent] = Field(default=None, description="生成的博客内容")
     document_url: str = Field(default="", description="最终文档URL")
+    rss_topics: List[str] = Field(default=[], description="从RSS订阅提取的热门话题")
+    daily_topics: List[DailyTopic] = Field(default=[], description="每日话题详情")
 
 
 # ==================== 节点输入输出定义 ====================
@@ -90,6 +113,7 @@ class ArticleFetchInput(BaseModel):
     platforms: List[str] = Field(..., description="要抓取的技术平台列表")
     keywords: List[str] = Field(..., description="搜索关键词")
     article_count: int = Field(default=10, description="每个平台抓取数量")
+    rss_topics: List[str] = Field(default=[], description="从RSS订阅提取的热门话题")
 
 
 class ArticleFetchOutput(BaseModel):
@@ -141,3 +165,23 @@ class DocumentGenerationInput(BaseModel):
 class DocumentGenerationOutput(BaseModel):
     """文档生成节点输出"""
     document_url: str = Field(..., description="生成的文档URL")
+
+
+class RssSubscriptionInput(BaseModel):
+    """RSS 订阅节点输入"""
+    rss_url: str = Field(
+        default="http://infinitum.shawnxie.top/api/daily/rss",
+        description="RSS 订阅链接"
+    )
+    max_topics: int = Field(
+        default=10,
+        description="最多提取的话题数量"
+    )
+
+
+class RssSubscriptionOutput(BaseModel):
+    """RSS 订阅节点输出"""
+    rss_topics: List[str] = Field(default=[], description="从 RSS 提取的热门话题")
+    daily_topics: List[DailyTopic] = Field(default=[], description="每日话题详情")
+    rss_fetch_status: str = Field(default="", description="RSS 获取状态")
+    status_message: str = Field(default="", description="状态消息")

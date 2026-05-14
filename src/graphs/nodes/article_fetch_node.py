@@ -28,13 +28,23 @@ def article_fetch_node(
 ) -> ArticleFetchOutput:
     """
     title: 文章抓取
-    desc: 调用大模型生成AI话题，并行从多平台抓取热门文章数据
+    desc: 合并RSS话题和大模型生成话题，并行从多平台抓取热门文章数据
     integrations: 大语言模型, Web搜索
     """
     ctx = new_context(method="article_fetch")
 
-    # ========== 步骤1: 调用大模型生成热门话题 ==========
-    generated_topics = _generate_topics(state.keywords, config, ctx)
+    # ========== 步骤1: 获取话题来源 ==========
+    # 优先使用 RSS 订阅的话题
+    rss_topics = state.rss_topics if hasattr(state, 'rss_topics') else []
+    
+    if rss_topics:
+        # 如果有 RSS 话题，直接使用
+        generated_topics = rss_topics
+        topic_source = "RSS订阅"
+    else:
+        # 否则调用大模型生成话题
+        generated_topics = _generate_topics(state.keywords, config, ctx)
+        topic_source = "大模型生成"
 
     # ========== 步骤2: 并行搜索所有话题 ==========
     articles = _parallel_search(
@@ -45,7 +55,7 @@ def article_fetch_node(
     )
 
     # ========== 步骤3: 汇总结果 ==========
-    summary = f"生成了 {len(generated_topics)} 个话题，从 {len(set(a.source for a in articles))} 个平台抓取到 {len(articles)} 篇相关文章"
+    summary = f"话题来源: {topic_source}，共 {len(generated_topics)} 个话题，从 {len(set(a.source for a in articles))} 个平台抓取到 {len(articles)} 篇相关文章"
 
     return ArticleFetchOutput(
         generated_topics=generated_topics,
