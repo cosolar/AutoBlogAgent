@@ -1,12 +1,15 @@
 {
     "name": "DeepSeek 配置示例",
-    "description": "使用 DeepSeek 的大模型服务",
+    "description": "使用 DeepSeek 大模型",
+    "type": "deepseek",
     "config": {
         "model_type": "deepseek",
         "model": "deepseek-chat",
-        "api_key": "${DEEPSEEK_API_KEY}",
-        "base_url": "https://api.deepseek.com/v1",
+        "api_key": "your-deepseek-api-key",
         "temperature": 0.7,
         "max_tokens": 4000
-    }
+    },
+    "sp": "You are a helpful assistant.",
+    "up": "Please respond to the following request: {{input}}",
+    "tools": []
 }

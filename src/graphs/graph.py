@@ -41,11 +41,15 @@ builder = StateGraph(
 def build_graph():
     """构建工作流图"""
     # 添加节点
-    # 文章抓取节点 - 使用Web搜索技能
+    # 文章抓取节点 - 调用大模型生成话题 + 并行Web搜索
     builder.add_node(
         "article_fetch",
         article_fetch_node,
-        metadata={"type": "task", "skill": "web-search"}
+        metadata={
+            "type": "task",
+            "skill": "web-search",
+            "topic_llm_cfg": "config/topic_generation_llm_cfg.json"
+        }
     )
 
     # 热点分析节点 - Agent节点

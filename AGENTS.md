@@ -1,14 +1,14 @@
-# 技术热点追踪与博客生成工作流
+# AutoBlogAgent 技术博文自动生成智能体
 
 ## 项目概述
-- **名称**: Tech Blog Generator
-- **功能**: 自动追踪GitHub、掘金、CSDN、博客园等开源技术平台的热点文章，识别热点话题，并生成专业完整的技术博客文档
+- **名称**: AutoBlogAgent
+- **功能**: 调用大模型生成AI技术话题，并行追踪GitHub、掘金、CSDN、博客园等开源技术平台的热点文章，识别热点话题，自动生成专业完整的技术博客文档
 
 ### 节点清单
 
 | 节点名 | 文件位置 | 类型 | 功能描述 | 分支逻辑 | 配置文件 |
 |-------|---------|------|---------|---------|---------|
-| article_fetch | `nodes/article_fetch_node.py` | task | 从多平台抓取热门文章数据 | - | Web搜索技能 |
+| article_fetch | `nodes/article_fetch_node.py` | task | 调用LLM生成话题 + 并行多平台抓取热门文章 | - | `topic_generation_llm_cfg.json`, Web搜索技能 |
 | hot_topic_analysis | `nodes/hot_topic_analysis_node.py` | agent | 使用LLM分析文章并识别热点话题 | - | `config/hot_topic_analysis_llm_cfg.json` |
 | topic_selection | `nodes/topic_selection_node.py` | task | 从热点话题中选择最热门主题 | - | - |
 | blog_generation | `nodes/blog_generation_node.py` | agent | 基于热点话题生成技术博客 | - | `config/blog_generation_llm_cfg.json` |
@@ -20,7 +20,9 @@
 本工作流不包含子图，所有节点均在主图中顺序执行。
 
 ## 技能使用
-- 节点`article_fetch`使用**Web搜索**技能从GitHub、掘金、CSDN、博客园等平台抓取文章
+- 节点`article_fetch`：
+  - 使用**大语言模型**技能生成AI技术话题
+  - 使用**Web搜索**技能从GitHub、掘金、CSDN、博客园等平台抓取文章（并行搜索）
 - 节点`hot_topic_analysis`使用**大语言模型**技能分析热点话题
 - 节点`blog_generation`使用**大语言模型**技能生成博客文章
 - 节点`document_generation`使用**文档生成**技能生成PDF文档

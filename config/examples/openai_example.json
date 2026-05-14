@@ -1,12 +1,15 @@
 {
     "name": "OpenAI 配置示例",
-    "description": "使用 OpenAI 的 GPT 系列模型",
+    "description": "使用 OpenAI GPT-4 系列模型",
+    "type": "openai",
     "config": {
         "model_type": "openai",
         "model": "gpt-4o",
-        "api_key": "${OPENAI_API_KEY}",
-        "base_url": "https://api.openai.com/v1",
+        "api_key": "your-openai-api-key",
         "temperature": 0.7,
         "max_tokens": 4000
-    }
+    },
+    "sp": "You are a helpful assistant.",
+    "up": "Please respond to the following request: {{input}}",
+    "tools": []
 }

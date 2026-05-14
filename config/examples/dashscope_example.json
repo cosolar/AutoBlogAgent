@@ -1,14 +1,15 @@
 {
-    "name": "阿里百炼（通义千问）配置示例",
-    "description": "使用阿里云的通义千问大模型服务",
+    "name": "阿里百炼配置示例",
+    "description": "使用阿里云通义千问大模型",
+    "type": "dashscope",
     "config": {
         "model_type": "dashscope",
         "model": "qwen-plus",
-        "api_key": "${DASHSCOPE_API_KEY}",
+        "api_key": "your-dashscope-api-key",
         "temperature": 0.7,
-        "max_tokens": 4000,
-        "extra_params": {
-            "top_p": 0.8
-        }
-    }
+        "max_tokens": 4000
+    },
+    "sp": "You are a helpful assistant.",
+    "up": "Please respond to the following request: {{input}}",
+    "tools": []
 }

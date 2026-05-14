@@ -48,6 +48,7 @@ class GlobalState(BaseModel):
     )
 
     # 中间状态
+    generated_topics: List[str] = Field(default=[], description="大模型生成的搜索话题")
     raw_articles: List[Article] = Field(default=[], description="抓取的原始文章列表")
     hot_topics: List[HotTopic] = Field(default=[], description="识别的热点话题列表")
     selected_topic: Optional[HotTopic] = Field(default=None, description="选中的热点话题")
@@ -93,6 +94,7 @@ class ArticleFetchInput(BaseModel):
 
 class ArticleFetchOutput(BaseModel):
     """文章抓取节点输出"""
+    generated_topics: List[str] = Field(default=[], description="大模型生成的搜索话题")
     raw_articles: List[Article] = Field(default=[], description="抓取的文章列表")
     fetch_summary: str = Field(default="", description="抓取摘要")
 
